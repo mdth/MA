@@ -92,7 +92,7 @@ def get_pattern_from_rdf(filename):
         f_pat = {"p_id": p_id, "pattern": key, "single_pattern": []}
         p_id += 1
         print f_pat
-        #db.pattern.insert_one(f_pat)
+        # db.pattern.insert_one(f_pat)
         for item in pattern:
             # pattern_ids = []
             f_pattern = {"pattern_id": pattern_id, "single_pattern": item}
@@ -114,7 +114,7 @@ def compile_pattern(string):
 
 def search_pattern(pattern, text):
     """Searches for the pattern found in the rdf in some text. Returns the number of found instances in the text."""
-    #TODO add ignorecase?
+    # TODO add ignorecase?
     s_pattern = compile_pattern('(\s)?' + pattern + '(\s|\.|,)')
     return len(re.findall(s_pattern, text))
 
@@ -125,6 +125,29 @@ def strip_token(pattern, token):
 
 def word_window(size, pattern, tokens):
     '''Get a word window list with a specific number of words.'''
+    split_pattern = pattern.split()
+    textsnippets = []
+    if len(split_pattern) > 1:
+        for ind, token in enumerate(tokens):
+            p_index = 0
+            i = ind
+            while p_index < len(split_pattern):
+                if strip_token(split_pattern[p_index], tokens[i]):
+                    p_index += 1
+                    end_index = i
+                    i += 1
+                else:
+                    break
+            if p_index == len(split_pattern):
+                print " ".join(tokens[ind - size:i + size])
+
+    else:
+        textsnippets = word_window_one_word(size, tokens, pattern)
+
+    return textsnippets
+
+
+def word_window_one_word(size, tokens, pattern):
     textsnippets = []
     textlength = len(tokens)
     for ind, token in enumerate(tokens):
@@ -151,7 +174,6 @@ def word_window(size, pattern, tokens):
                 textsnippets.append(" ".join(tokens[ind - left_index:ind + size + 1]))
             else:
                 textsnippets.append(" ".join(tokens[ind - size:ind + (size + 1)]))
-
     return textsnippets
 
 
@@ -223,7 +245,7 @@ def get_snippets(snippets):
                 f_snippet = {"snippet_id": snippet_id, "text_snippet": snippet}
                 snippet_id += 1
                 print f_snippet
-                #db.snippets.insert_one(f_snippet)
+                # db.snippets.insert_one(f_snippet)
 
 
 def get_db_text(rdf_pattern, size):
