@@ -72,7 +72,7 @@ def get_pattern_from_rdf(filename):
     """Returns only pattern list from RDF data."""
     # TODO debug print
     print "Found pattern in RDF."
-    print ""
+    print
 
     data = read_in_rdf_file(filename)
     pattern_list = dict()
@@ -104,7 +104,7 @@ def push_pattern(pattern_list):
             print f_pattern
             db.single_pattern.insert_one(f_pattern)
             db.pattern.find_and_modify(query={"p_id": p_id - 1}, update={"$set": {"single_pattern": pattern_ids}})
-    for p in db.pattern.find():
+    for p in db.pattern.find().pretty():
         print p
 
 
@@ -232,15 +232,14 @@ def find_text_window(text, rdf_pattern, size):
         # object only has one key
         if len(pattern) == 1:
             found_pattern.update({key: search_pattern(pattern[0], text)})
-            snippets = sentence_window(size, pattern[0], split_text)
-
+            snippets = word_window(size, pattern[0], split_text)
             push_snippets(snippets)
 
         # object has more than one key
         else:
             num_matches = 0
             for item in pattern:
-                snippets = sentence_window(size, item, split_text)
+                snippets = word_window(size, item, split_text)
                 push_snippets(snippets)
                 num_matches += search_pattern(item, text)
                 found_pattern.update({key: num_matches})
@@ -254,6 +253,8 @@ def push_snippets(snippets):
         for snippet in snippets:
             if not db.snippets.find_one({"text_snippet": snippet}):
                 f_snippet = {"snippet_id": snippet_id, "text_snippet": snippet}
+                #f_pattern_snippet = {"pattern_id": pattern_id, "snippet_id": snippet_id}
+                #db.single_pattern_snippets.insert_one(f_pattern_snippet)
                 snippet_id += 1
                 print f_snippet
                 db.snippets.insert_one(f_snippet)
@@ -265,6 +266,11 @@ def get_db_text(rdf_pattern, size):
 
 
 connecting_to_db()
+print "------------------- Pattern in the DB -------------------"
 parsed_RDF = get_pattern_from_rdf('C:/Users/din_m/Google Drive/MA/Prototypen/vhs_qcalculus_mod.rdf')
 print
+print "------------------- Snippets in the DB -------------------"
 get_db_text(parsed_RDF, 0)
+print "------------------- Relations in the DB -------------------"
+for relation in db.single_pattern_snippets.find().pretty():
+    print relation
