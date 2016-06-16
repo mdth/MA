@@ -18,6 +18,9 @@ def connecting_to_DB():
     '''Connecting to localhost MongoDB and initializing needed data base and collections.'''
     # default host and port (localhost, 27017)
     client = MongoClient()
+
+    print "DB connection sucessfully built..."
+
     global db
     db = client.database
     fackel_corpus = db.fackel_corpus #collection
@@ -32,29 +35,27 @@ def connecting_to_DB():
     single_pattern = db.single_pattern
     db.single_pattern.create_index([('single_pattern_id', pymongo.ASCENDING)], unique=True, sparse=True)
     
-    pattern_snippets = db.pattern_snippets
+    # pattern_snippets = db.pattern_snippets
     single_pattern_snippets = db.single_pattern_snippets
     aggregation = db.aggregation
 
 def read_in_file(filename):
-    '''Read in file and return file content as string.'''
+    """Read in file and return file content as string."""
     with open(filename, 'rb') as file:
         return file.read()
 
 def add_articles(file_directory):
-    '''Add one article into database.'''
+    """Add one article into database."""
     for file in os.listdir(file_directory):
         if file.endswith(".txt"):
-            global id 
-            id = id + 1      
+            global id
             article = {"id" : id,
                        "title" : os.path.splitext(os.path.basename(file))[0],
                        "text" : read_in_file(file_directory + file)}
             db.fackel_corpus.insert_one(article)
-            
-    #TODO debug print
-    print db.fackel_corpus.count()
+            id = id + 1
 
-id = 1                                                        
+
+id = 0
 connecting_to_DB()
 add_articles("C:/Users/din_m/Google Drive/MA/Prototypen/test/")
