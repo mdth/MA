@@ -114,7 +114,6 @@ def compile_pattern(string):
 
 def search_pattern(pattern, text):
     """Searches for the pattern found in the rdf in some text. Returns the number of found instances in the text."""
-    # TODO add ignorecase?
     s_pattern = compile_pattern('(\s)?' + pattern + '(\s|\.|,)')
     return len(re.findall(s_pattern, text))
 
@@ -126,55 +125,64 @@ def strip_token(pattern, token):
 def word_window(size, pattern, tokens):
     '''Get a word window list with a specific number of words.'''
     split_pattern = pattern.split()
-    textsnippets = []
     if len(split_pattern) > 1:
-        for ind, token in enumerate(tokens):
-            p_index = 0
-            i = ind
-            while p_index < len(split_pattern):
-                if strip_token(split_pattern[p_index], tokens[i]):
-                    p_index += 1
-                    end_index = i
-                    i += 1
-                else:
-                    break
-            if p_index == len(split_pattern):
-                print " ".join(tokens[ind - size:i + size])
+        textsnippets = word_window_more_words_help(size, split_pattern, tokens)
 
     else:
-        textsnippets = word_window_one_word(size, tokens, pattern)
+        textsnippets = word_window_one_word_help(size, pattern, tokens)
 
     return textsnippets
 
 
-def word_window_one_word(size, tokens, pattern):
+def word_window_more_words_help(size, split_pattern, tokens):
+    textsnippets = []
+    for ind, token in enumerate(tokens):
+        p_index = 0
+        end_index = ind
+        while p_index < len(split_pattern):
+            if strip_token(split_pattern[p_index], tokens[end_index]):
+                p_index += 1
+                end_index = end_index
+                end_index += 1
+            else:
+                break
+        if p_index == len(split_pattern):
+            textsnippets.append(get_textsnippets(ind, end_index - 1, size, len(tokens), textsnippets, tokens))
+    return textsnippets
+
+
+def word_window_one_word_help(size, pattern, tokens):
     textsnippets = []
     textlength = len(tokens)
     for ind, token in enumerate(tokens):
         if strip_token(pattern, token):
-            if (ind - size <= 0) and (ind + size > textlength):
-                left_index = size - 1
-                while not (ind - left_index) == 0:
-                    left_index -= 1
-                right_index = size - 1
-                while not (ind + right_index) == textlength:
-                    right_index -= 1
-                textsnippets.append(" ".join(tokens[ind - left_index:ind + right_index]))
-
-            elif ind + size > textlength:
-                right_index = size - 1
-                while not (ind + right_index) == textlength:
-                    right_index -= 1
-                textsnippets.append(" ".join(tokens[ind - size:ind + right_index]))
-
-            elif ind - size <= 0:
-                left_index = size - 1
-                while not (ind - left_index) == 0:
-                    left_index -= 1
-                textsnippets.append(" ".join(tokens[ind - left_index:ind + size + 1]))
-            else:
-                textsnippets.append(" ".join(tokens[ind - size:ind + (size + 1)]))
+            textsnippets.append(get_textsnippets(ind, ind, size, textlength, textsnippets, tokens))
     return textsnippets
+
+
+def get_textsnippets(indl, indr, size, textlength, textsnippets, tokens):
+    if (indl - size < 0) and (indr + size > textlength):
+        left_index = size - 1
+        while not (indl - left_index) == 0:
+            left_index -= 1
+        right_index = size - 1
+        while not (indr + right_index) == textlength:
+            right_index -= 1
+        return " ".join(tokens[indl - left_index:indr + right_index])
+
+    elif indr + size > textlength:
+        right_index = size - 1
+        while not (indr + right_index) == textlength:
+            right_index -= 1
+        return " ".join(tokens[indl - size:indr + right_index])
+
+    elif indl - size < 0:
+        left_index = size - 1
+        while not (indl - left_index) == 0:
+            left_index -= 1
+        return " ".join(tokens[indl - left_index:indr + size + 1])
+    else:
+        return " ".join(tokens[indl - size:indr + (size + 1)])
 
 
 def sentence_window(size, pattern, tokens):
@@ -212,6 +220,7 @@ def find_text_window(text, rdf_pattern, size):
     split_text = text.split()
 
     for ind, unicode in enumerate(split_text):
+        #TODO
         split_text[ind] = unicode.encode('ascii')
 
     found_pattern = dict()
@@ -225,6 +234,7 @@ def find_text_window(text, rdf_pattern, size):
             snippets = sentence_window(size, pattern[0], split_text)
 
             get_snippets(snippets)
+            
         # object has more than one key
         else:
             num_matches = 0
@@ -254,7 +264,7 @@ def get_db_text(rdf_pattern, size):
         find_text_window(text['text'], rdf_pattern, size)
 
 
-connecting_to_db()
-parsed_RDF = get_pattern_from_rdf('C:/Users/din_m/Google Drive/MA/Prototypen/vhs_qcalculus_mod.rdf')
+#connecting_to_db()
+#parsed_RDF = get_pattern_from_rdf('C:/Users/din_m/Google Drive/MA/Prototypen/vhs_qcalculus_mod.rdf')
 print
-get_db_text(parsed_RDF, 0)
+#get_db_text(parsed_RDF, 0)
