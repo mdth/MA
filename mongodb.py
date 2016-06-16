@@ -27,10 +27,10 @@ def connecting_to_DB():
     db.text_snippets.create_index([('text_snippet_id', pymongo.ASCENDING)], unique=True)  
     
     pattern = db.pattern
-    db.pattern.create_index([('pattern_id', pymongo.ASCENDING)], unique=True)  
+    db.pattern.create_index([('pattern_id', pymongo.ASCENDING)], unique=True, sparse=True)
     
     single_pattern = db.single_pattern
-    db.single_pattern.create_index([('single_pattern_id', pymongo.ASCENDING)], unique=True)
+    db.single_pattern.create_index([('single_pattern_id', pymongo.ASCENDING)], unique=True, sparse=True)
     
     pattern_snippets = db.pattern_snippets
     single_pattern_snippets = db.single_pattern_snippets

@@ -71,10 +71,8 @@ def read_in_rdf_file(filename):
 def get_pattern_from_rdf(filename):
     """Returns only pattern list from RDF data."""
     # TODO debug print
-    global pattern_id
-    global p_id
-    global db
     print "Found pattern in RDF."
+    print ""
 
     data = read_in_rdf_file(filename)
     pattern_list = dict()
@@ -87,24 +85,27 @@ def get_pattern_from_rdf(filename):
             # TODO debug line
             print "%s %s %s" % (subject, has_pattern, object)
 
+    push_pattern(pattern_list)
+    return pattern_list
+
+
+def push_pattern(pattern_list):
+    global p_id, pattern_id, db
     for key in pattern_list:
         pattern = pattern_list[key]
         f_pat = {"p_id": p_id, "pattern": key, "single_pattern": []}
         p_id += 1
-        print f_pat
-        # db.pattern.insert_one(f_pat)
+        pattern_ids = []
+        db.pattern.insert_one(f_pat)
         for item in pattern:
-            # pattern_ids = []
             f_pattern = {"pattern_id": pattern_id, "single_pattern": item}
-            # pattern_ids.append(pattern_id)
+            pattern_ids.append(pattern_id)
             pattern_id += 1
             print f_pattern
-            # db.single_pattern.insert_one(f_pattern)
-            # TODO
-            # f_pat = {{"p_id" : p_id}, {"$set": {"single_pattern" : pattern_ids}}}
-            # print f_pat
-            # db.pattern.update_one(f_pat)
-    return pattern_list
+            db.single_pattern.insert_one(f_pattern)
+            db.pattern.find_and_modify(query={"p_id": p_id - 1}, update={"$set": {"single_pattern": pattern_ids}})
+    for p in db.pattern.find():
+        print p
 
 
 def compile_pattern(string):
@@ -218,12 +219,12 @@ def sentence_window(size, pattern, tokens):
 def find_text_window(text, rdf_pattern, size):
     """Finds text windows with variable size."""
     split_text = text.split()
+    found_pattern = dict()
 
     for ind, unicode in enumerate(split_text):
         #TODO
         split_text[ind] = unicode.encode('ascii')
 
-    found_pattern = dict()
     # find key
     for key in rdf_pattern:
         pattern = rdf_pattern[key]
@@ -233,38 +234,37 @@ def find_text_window(text, rdf_pattern, size):
             found_pattern.update({key: search_pattern(pattern[0], text)})
             snippets = sentence_window(size, pattern[0], split_text)
 
-            get_snippets(snippets)
-            
+            push_snippets(snippets)
+
         # object has more than one key
         else:
             num_matches = 0
             for item in pattern:
-                get_snippets(snippets)
+                snippets = sentence_window(size, item, split_text)
+                push_snippets(snippets)
                 num_matches += search_pattern(item, text)
                 found_pattern.update({key: num_matches})
     # TODO debug print
     print found_pattern
 
 
-def get_snippets(snippets):
-    global db
-    global snippet_id
+def push_snippets(snippets):
+    global db, snippet_id
     if len(snippets) > 0:
         for snippet in snippets:
             if not db.snippets.find_one({"text_snippet": snippet}):
                 f_snippet = {"snippet_id": snippet_id, "text_snippet": snippet}
                 snippet_id += 1
                 print f_snippet
-                # db.snippets.insert_one(f_snippet)
+                db.snippets.insert_one(f_snippet)
 
 
 def get_db_text(rdf_pattern, size):
     for text in db.fackel_corpus.find():
-        # print text['text']
         find_text_window(text['text'], rdf_pattern, size)
 
 
-#connecting_to_db()
-#parsed_RDF = get_pattern_from_rdf('C:/Users/din_m/Google Drive/MA/Prototypen/vhs_qcalculus_mod.rdf')
+connecting_to_db()
+parsed_RDF = get_pattern_from_rdf('C:/Users/din_m/Google Drive/MA/Prototypen/vhs_qcalculus_mod.rdf')
 print
-#get_db_text(parsed_RDF, 0)
+get_db_text(parsed_RDF, 0)
