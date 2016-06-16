@@ -9,8 +9,9 @@ import os
 import codecs
 from pymongo import MongoClient
 
-global db
-global id 
+global db, id
+id = 0
+
 
 def connecting_to_DB():
     #os.system("start /wait cmd /c {C:/MongoDB/bin mongod}")
@@ -39,10 +40,12 @@ def connecting_to_DB():
     single_pattern_snippets = db.single_pattern_snippets
     aggregation = db.aggregation
 
+
 def read_in_file(filename):
     """Read in file and return file content as string."""
     with open(filename, 'rb') as file:
         return file.read()
+
 
 def add_articles(file_directory):
     """Add one article into database."""
@@ -53,9 +56,11 @@ def add_articles(file_directory):
                        "title" : os.path.splitext(os.path.basename(file))[0],
                        "text" : read_in_file(file_directory + file)}
             db.fackel_corpus.insert_one(article)
-            id = id + 1
+            id += 1
 
 
-id = 0
 connecting_to_DB()
-add_articles("C:/Users/din_m/Google Drive/MA/Prototypen/test/")
+add_articles("C:/Users/din_m/MA/test/")
+
+for a in db.fackel_corpus.find():
+    print a

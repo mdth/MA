@@ -118,7 +118,7 @@ def search_pattern(pattern, text):
 
 
 def strip_token(pattern, token):
-    return token.strip(",'.!?(\u00AB)(\u00BB)") == pattern or token.strip(',".!?(\u00AB)(\u00BB)') == pattern
+    return token.strip(",'.!?") == pattern or token.strip(',".!?') == pattern
 
 
 def word_window(size, pattern, tokens):
@@ -186,10 +186,10 @@ def get_textsnippets(indl, indr, size, textlength, tokens):
 
 def sentence_window(size, pattern, tokens):
     '''Get a word window list with a specific number of sentences. size 0 will return the
-    current senctence the pattern is found in. size n will return n sentences left and right
+    current sentence the pattern is found in. size n will return n sentences left and right
     from the initial sentence.'''
     textsnippets = []
-    sentence_boundary = compile_pattern('(\w)*(\u00AB)*(\.|!|\?)+')
+    sentence_boundary = compile_pattern('(\w)*(\.|!|\?)+')
     sent_size = size + 1
     for ind, token in enumerate(tokens):
         if strip_token(pattern, token):
@@ -208,7 +208,7 @@ def sentence_window(size, pattern, tokens):
                     textsnippets.append(" ".join(tokens[ind - l:ind + r]))
                     size2 += 1
                 elif (size2 < sent_size) and re.search(sentence_boundary, tokens[ind - l]):
-                    textsnippets.append(" ".join(tokens[ind - (l - 1):ind + (r)]))
+                    textsnippets.append(" ".join(tokens[ind - (l - 1):ind + r]))
                     size2 += 1
                 l += 1
     return textsnippets
@@ -224,9 +224,10 @@ def find_text_window(text, text_id, size):
 
     for pattern in db.single_pattern.find():
         snippets = sentence_window(size, pattern['single_pattern'].encode('ascii'), split_text)
-        single_pattern_id = pattern['pattern_id']
-        push_snippets(snippets, single_pattern_id)
-        push_aggregation(text_id, single_pattern_id)
+        if len(snippets) > 0:
+            single_pattern_id = pattern['pattern_id']
+            push_snippets(snippets, single_pattern_id)
+            push_aggregation(text_id, single_pattern_id)
 
 
 def push_aggregation(text_id, single_pattern_id):
@@ -267,6 +268,17 @@ def get_db_text(size):
         find_text_window(text['text'], text['id'], size)
 
 
+def aggregation():
+    for pattern in db.aggregation.find():
+        num_of_snippets = 0
+        single_pattern = pattern['single_pattern_id']
+
+        for sp_id in single_pattern:
+            for snippets in db.single_pattern_snippets.find({"pattern_id": sp_id}):
+                num_of_snippets += len(snippets['snippet_id'])
+        print "Number of Snippets for text with id " + str(pattern['id']) + ": " + str(num_of_snippets)
+
+
 def debug_pretty_print():
     global db
 
@@ -290,22 +302,9 @@ def debug_pretty_print():
 
 
 connecting_to_db()
-#get_pattern_from_rdf('C:/Users/din_m/Google Drive/MA/Prototypen/vhs_qcalculus_mod.rdf')
-#get_db_text(0)
+get_pattern_from_rdf('C:/Users/din_m/MA/vhs_qcalculus_mod.rdf')
+get_db_text(0)
 
 # debug print
 debug_pretty_print()
-
-snippet_list = []
-for pattern in db.aggregation.find():
-    num_of_snippets = 0
-    single_pattern = pattern['single_pattern_id']
-
-    for sp_id in single_pattern:
-        for snippets in db.single_pattern_snippets.find({"pattern_id": sp_id}):
-            snippet_list.append(snippets['snippet_id'])
-            num_of_snippets += len(snippets['snippet_id'])
-    print "Number of Snippets for text with id = 0: " + str(num_of_snippets)
-
-for snippets in db.single_pattern_snippets.find():
-    print snippets
+aggregation()
